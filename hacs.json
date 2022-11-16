@@ -1,7 +1,6 @@
 {
     "name": "wienerlinien",
     "render_readme": true,
-    "hacs": "0.19.0",
     "homeassistant": "2022.3.1",
     "country": "AT"
 }

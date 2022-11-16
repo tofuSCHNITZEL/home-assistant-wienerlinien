@@ -32,6 +32,6 @@ update: ## Pull master from custom-components/wienerlinien
 homeassistant-install: ## Install the latest dev version of Home Assistant
 	python3 -m pip --disable-pip-version-check install -U setuptools wheel
 	python3 -m pip --disable-pip-version-check \
-		install --upgrade git+git://github.com/home-assistant/home-assistant.git@dev;
+		install --upgrade git+https://github.com/home-assistant/home-assistant.git@dev;
 
 homeassistant-update: homeassistant-install ## Alias for 'homeassistant-install'

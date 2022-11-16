@@ -9,6 +9,7 @@ from datetime import timedelta
 import async_timeout
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
+
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
@@ -38,28 +39,44 @@ async def async_setup_platform(hass, config, add_devices_callback, discovery_inf
     """Setup."""
     stops = config.get(CONF_STOPS)
     firstnext = config.get(CONF_FIRST_NEXT)
-    dev = []
+    devices = []
     for stopid in stops:
         api = WienerlinienAPI(async_create_clientsession(hass), hass.loop, stopid)
         data = await api.get_json()
-        try:
-            name = data["data"]["monitors"][0]["locationStop"]["properties"]["title"]
-        except Exception:
-            raise PlatformNotReady()
-        dev.append(WienerlinienSensor(api, name, firstnext))
-    add_devices_callback(dev, True)
+        create_device_per_monitor(devices, data, api, firstnext)
+    add_devices_callback(devices, True)
+
+
+def create_device_per_monitor(devices, data, api, firstnext):
+    """Enumerate monitors in stop and create device sensor per monitor"""
+    try:
+        monitors = data["data"]["monitors"]
+    except Exception:
+        raise PlatformNotReady()
+    for idx, monitor in enumerate(monitors):
+        title = monitor["locationStop"]["properties"]["title"]
+        line = monitor["lines"][0]
+        line_name = line["name"]
+        destination = line["towards"]
+        name = f"{title} {line_name} towards {destination}"
+        vehicle_type = line["type"]
+        devices.append(WienerlinienSensor(idx, api, name, firstnext, vehicle_type))
+    return devices
 
 
 class WienerlinienSensor(Entity):
     """WienerlinienSensor."""
 
-    def __init__(self, api, name, firstnext):
+    def __init__(self, idx, api, name, firstnext, vehicle_type):
         """Initialize."""
+        self.idx = idx
         self.api = api
         self.firstnext = firstnext
+        self.vehicle_type = vehicle_type
         self._name = name
         self._state = None
         self.attributes = {}
+        self._attr_unique_id = f"{name}-{firstnext}".replace(" ", "-")
 
     async def async_update(self):
         """Update data."""
@@ -76,7 +93,7 @@ class WienerlinienSensor(Entity):
         if data is None:
             return
         try:
-            line = data["monitors"][0]["lines"][0]
+            line = data["monitors"][self.idx]["lines"][0]
             departure = line["departures"]["departure"][
                 DEPARTURES[self.firstnext]["key"]
             ]
@@ -113,7 +130,13 @@ class WienerlinienSensor(Entity):
     @property
     def icon(self):
         """Return icon."""
-        return "mdi:bus"
+        match self.vehicle_type:
+            case "ptMetro":
+                return "mdi:subway"
+            case "ptTram":
+                return "mdi:tram"
+            case "ptBusCity":
+                return "mdi:bus"
 
     @property
     def extra_state_attributes(self):
