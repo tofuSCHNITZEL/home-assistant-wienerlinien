@@ -34,6 +34,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 
 _LOGGER = logging.getLogger(__name__)
 
+UNIQUE_IDS = set()
+
 
 async def async_setup_platform(hass, config, add_devices_callback, discovery_info=None):
     """Setup."""
@@ -76,7 +78,7 @@ class WienerlinienSensor(Entity):
         self._name = name
         self._state = None
         self.attributes = {}
-        self._attr_unique_id = f"{name}-{firstnext}".replace(" ", "-")
+        self._attr_unique_id = generate_and_store_unique_id(self.name, self.firstnext)
 
     async def async_update(self):
         """Update data."""
@@ -129,13 +131,15 @@ class WienerlinienSensor(Entity):
 
     @property
     def icon(self):
-        """Return icon."""
+        """Return icon according to vehicle."""
         match self.vehicle_type:
             case "ptMetro":
                 return "mdi:subway"
             case "ptTram":
                 return "mdi:tram"
             case "ptBusCity":
+                return "mdi:bus"
+            case _:
                 return "mdi:bus"
 
     @property
@@ -170,3 +174,16 @@ class WienerlinienAPI:
             pass
 
         return value
+
+
+def generate_and_store_unique_id(name, firstnext):
+    """Generate and store a unique id for each sensor. Attempt to ensure no duplicates IDs are created."""
+    unique_id = f"{name}-{firstnext}".replace(" ", "-")
+    unique_id_partial_matches = len([i for i in UNIQUE_IDS if unique_id in i])
+    if unique_id_partial_matches > 0:
+        unique_id = f"{unique_id}-{unique_id_partial_matches}"
+        UNIQUE_IDS.add(unique_id)
+        return unique_id
+    else:
+        UNIQUE_IDS.add(unique_id)
+        return unique_id
