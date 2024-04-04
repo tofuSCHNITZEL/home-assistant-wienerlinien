@@ -39,11 +39,14 @@ async def async_setup_platform(hass, config, add_devices_callback, discovery_inf
     stops = config.get(CONF_STOPS)
     firstnext = config.get(CONF_FIRST_NEXT)
     dev = []
-    for stopid in stops:
-        api = WienerlinienAPI(async_create_clientsession(hass), hass.loop, stopid)
-        data = await api.get_json()
+    api = WienerlinienAPI(async_create_clientsession(hass), hass.loop, stops)
+    data = await api.get_json()
+    
+    stopsData = data["data"]["monitors"]
+
+    for stop in stopsData:
         try:
-            name = data["data"]["monitors"][0]["locationStop"]["properties"]["title"]
+            name = stop["locationStop"]["properties"]["title"]
         except Exception:
             raise PlatformNotReady()
         dev.append(WienerlinienSensor(api, name, firstnext))
@@ -129,16 +132,21 @@ class WienerlinienSensor(Entity):
 class WienerlinienAPI:
     """Call API."""
 
-    def __init__(self, session, loop, stopid):
+    def __init__(self, session, loop, stops):
         """Initialize."""
         self.session = session
         self.loop = loop
-        self.stopid = stopid
+        self.stops = stops
 
     async def get_json(self):
         """Get json from API endpoint."""
         value = None
-        url = BASE_URL.format(self.stopid)
+        stopsQuery = ""
+
+        for stopid in self.stops:
+            stopsQuery += "stopId="+stopid+"&"
+
+        url = BASE_URL.format(stopsQuery)
         try:
             async with async_timeout.timeout(10):
                 response = await self.session.get(url)

@@ -1,5 +1,5 @@
 """Constants"""
-BASE_URL = "http://www.wienerlinien.at/ogd_realtime/monitor?rbl={}"
+BASE_URL = "http://www.wienerlinien.at/ogd_realtime/monitor?{}"
 
 DEPARTURES = {
     "first": {"key": 0, "name": "{} first departure"},
