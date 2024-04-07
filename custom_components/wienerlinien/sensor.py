@@ -39,25 +39,37 @@ async def async_setup_platform(hass, config, add_devices_callback, discovery_inf
     stops = config.get(CONF_STOPS)
     firstnext = config.get(CONF_FIRST_NEXT)
     dev = []
-    for stopid in stops:
+    for fullstopid in stops:
+        if '/' in fullstopid:
+            parts = fullstopid.split('/')
+            stopid = parts[0]
+            linespec = parts[1]
+            _LOGGER.debug("Identified Stop: "+stopid+", Line: "+linespec)
+        else:
+            stopid = fullstopid
+            linespec = None
+            _LOGGER.debug("Identified Stop: "+stopid)
+
         api = WienerlinienAPI(async_create_clientsession(hass), hass.loop, stopid)
         data = await api.get_json()
         try:
-            name = data["data"]["monitors"][0]["locationStop"]["properties"]["title"]
+            stopname = data["data"]["monitors"][0]["locationStop"]["properties"]["title"]
         except Exception:
             raise PlatformNotReady()
-        dev.append(WienerlinienSensor(api, name, firstnext))
+        dev.append(WienerlinienSensor(api, stopname, firstnext, linespec))
     add_devices_callback(dev, True)
 
 
 class WienerlinienSensor(Entity):
     """WienerlinienSensor."""
 
-    def __init__(self, api, name, firstnext):
+    def __init__(self, api, stopname, firstnext, linespec):
         """Initialize."""
         self.api = api
         self.firstnext = firstnext
-        self._name = name
+        self.linespec = linespec
+        self.stopname = stopname
+        self._name = stopname
         self._state = None
         self.attributes = {}
 
@@ -76,7 +88,23 @@ class WienerlinienSensor(Entity):
         if data is None:
             return
         try:
-            line = data["monitors"][0]["lines"][0]
+
+            if self.linespec == None:
+                line = data["monitors"][0]["lines"][0]
+            else:
+                line = None
+                for monitor in data["monitors"]:
+                    for linePos in monitor["lines"]:
+                        lineName = linePos["name"]
+                        if lineName.lower() == self.linespec.lower():
+                            line = linePos
+                            self._name = self.stopname + " ("+line["name"]+", "+line["towards"]+")"
+                            break
+                if line == None:
+                    _LOGGER.debug("Could not find the line: " + self.linespec)
+                    line = data["monitors"][0]["lines"][0]
+
+            #line = data["monitors"][0]["lines"][0]
             departure = line["departures"]["departure"][
                 DEPARTURES[self.firstnext]["key"]
             ]
@@ -92,6 +120,7 @@ class WienerlinienSensor(Entity):
                 "platform": line["platform"],
                 "direction": line["direction"],
                 "name": line["name"],
+                "towards": line["towards"],
                 "countdown": departure["departureTime"]["countdown"],
             }
         except Exception:
