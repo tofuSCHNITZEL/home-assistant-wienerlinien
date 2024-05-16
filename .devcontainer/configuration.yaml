@@ -8,13 +8,13 @@ debugpy:
 
 sensor:
   - platform: wienerlinien
-    stops: '4429'
+    stops: '911'
     firstnext: first
   - platform: wienerlinien
-    stops: '4429'
+    stops: '923'
     firstnext: next
   - platform: wienerlinien
     firstnext: first
     stops:
-      - '4429'
-      - '3230'
+      - '3835'
+      - '3836'
