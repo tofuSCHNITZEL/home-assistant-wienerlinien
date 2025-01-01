@@ -37,7 +37,8 @@ from datetime import timedelta
 import async_timeout
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-from homeassistant.components.sensor import PLATFORM_SCHEMA
+from homeassistant.components.sensor import PLATFORM_SCHEMA, SensorEntity
+from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.helpers.entity import Entity
@@ -81,7 +82,7 @@ async def async_setup_platform(hass, config, add_devices_callback, discovery_inf
     add_devices_callback(dev, True)
 
 
-class WienerlinienSensor(Entity):
+class WienerlinienSensor(SensorEntity, BinarySensorEntity):
     """WienerlinienSensor."""
 
     def __init__(self, api, name, firstnext, stopid, custom_name=None):
@@ -153,8 +154,12 @@ class WienerlinienSensor(Entity):
 
     @property
     def icon(self):
-        """Return icon."""
-        return "mdi:bus"
+        """Return icon with different states based on countdown."""
+        try:
+            countdown = self.attributes.get("countdown")
+            return "mdi:bus" if countdown is None or countdown > 1 else "mdi:bus-alert"
+        except (TypeError, ValueError):
+            return "mdi:bus"
 
     @property
     def extra_state_attributes(self):
@@ -165,6 +170,20 @@ class WienerlinienSensor(Entity):
     def device_class(self):
         """Return device_class."""
         return "timestamp"
+
+    @property
+    def is_on(self):
+        """Return true if departure is imminent (<=1 minute)."""
+        try:
+            countdown = self.attributes.get("countdown")
+            return countdown is not None and countdown <= 1
+        except (TypeError, ValueError):
+            return None
+
+    @property 
+    def binary_sensor_device_class(self):
+        """Return binary sensor device class."""
+        return "running"
 
 
 class WienerlinienAPI:
