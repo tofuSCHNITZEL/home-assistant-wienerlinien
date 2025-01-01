@@ -1,4 +1,8 @@
 """Constants"""
+DOMAIN = "wienerlinien"
+CONF_STOPS = "stops"
+CONF_FIRST_NEXT = "firstnext"
+
 BASE_URL = "http://www.wienerlinien.at/ogd_realtime/monitor?rbl={}"
 
 DEPARTURES = {

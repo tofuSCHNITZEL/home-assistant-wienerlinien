@@ -82,6 +82,25 @@ async def async_setup_platform(hass, config, add_devices_callback, discovery_inf
     add_devices_callback(dev, True)
 
 
+async def async_setup_entry(hass, config_entry, async_add_entities):
+    """Set up the sensor from a config entry."""
+    stop_id = config_entry.data[CONF_STOPS]
+    firstnext = config_entry.data.get(CONF_FIRST_NEXT, "first")
+    custom_name = config_entry.data.get(CONF_NAME)
+
+    api = WienerlinienAPI(async_create_clientsession(hass), hass.loop, stop_id)
+    data = await api.get_json()
+    try:
+        name = data["data"]["monitors"][0]["locationStop"]["properties"]["title"]
+    except Exception:
+        raise PlatformNotReady()
+
+    async_add_entities(
+        [WienerlinienSensor(api, name, firstnext, stop_id, custom_name)], 
+        True
+    )
+
+
 class WienerlinienSensor(SensorEntity, BinarySensorEntity):
     """WienerlinienSensor."""
 
