@@ -24,6 +24,7 @@ key | description
 **platform (Required)** | The platform name.
 **stops (Required)** | RBL stop ID's
 **firstnext (Optional)** | `first` or `next` departure.
+**name (Optional)** | Custom name for the sensor.
 
 ## Sample overview
 

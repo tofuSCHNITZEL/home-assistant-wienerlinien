@@ -47,6 +47,7 @@ from custom_components.wienerlinien.const import BASE_URL, DEPARTURES
 CONF_STOPS = "stops"
 CONF_APIKEY = "apikey"
 CONF_FIRST_NEXT = "firstnext"
+CONF_NAME = "name"  # Add name configuration
 
 SCAN_INTERVAL = timedelta(seconds=30)
 
@@ -55,6 +56,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         vol.Optional(CONF_APIKEY): cv.string,
         vol.Optional(CONF_STOPS, default=None): vol.All(cv.ensure_list, [cv.string]),
         vol.Optional(CONF_FIRST_NEXT, default="first"): cv.string,
+        vol.Optional(CONF_NAME): cv.string,  # Add name to schema
     }
 )
 
@@ -66,6 +68,7 @@ async def async_setup_platform(hass, config, add_devices_callback, discovery_inf
     """Setup."""
     stops = config.get(CONF_STOPS)
     firstnext = config.get(CONF_FIRST_NEXT)
+    custom_name = config.get(CONF_NAME)
     dev = []
     for stopid in stops:
         api = WienerlinienAPI(async_create_clientsession(hass), hass.loop, stopid)
@@ -74,20 +77,27 @@ async def async_setup_platform(hass, config, add_devices_callback, discovery_inf
             name = data["data"]["monitors"][0]["locationStop"]["properties"]["title"]
         except Exception:
             raise PlatformNotReady()
-        dev.append(WienerlinienSensor(api, name, firstnext))
+        dev.append(WienerlinienSensor(api, name, firstnext, stopid, custom_name))
     add_devices_callback(dev, True)
 
 
 class WienerlinienSensor(Entity):
     """WienerlinienSensor."""
 
-    def __init__(self, api, name, firstnext):
+    def __init__(self, api, name, firstnext, stopid, custom_name=None):
         """Initialize."""
         self.api = api
         self.firstnext = firstnext
-        self._name = name
+        self._name = custom_name or name
         self._state = None
         self.attributes = {}
+        self._stop_id = stopid
+        self._base_name = name  # Store original stop name
+
+    @property
+    def unique_id(self):
+        """Return unique ID for the sensor."""
+        return f"wienerlinien_{self._stop_id}_{self.firstnext}"
 
     async def async_update(self):
         """Update data."""
@@ -128,6 +138,9 @@ class WienerlinienSensor(Entity):
     @property
     def name(self):
         """Return name."""
+        line_name = self.attributes.get("name", "")
+        if line_name:
+            return f"{line_name}, {DEPARTURES[self.firstnext]['name'].format(self._name)}"
         return DEPARTURES[self.firstnext]["name"].format(self._name)
 
     @property
