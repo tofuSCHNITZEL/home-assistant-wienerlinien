@@ -1,30 +1,69 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 
-# Get information about next departures
+# Home Assistant Wienerlinien Integration
 
-A sensor platform which allows you to get information about departures from a specified Wiener Linien stop.
+This Home Assistant integration provides real-time departure information for public transport stops in Vienna using the Wienerlinien API.
 
-To get started install this with [HACS](https://hacs.xyz/)
+## Installation
 
-## Example configuration.yaml
+### Option 1: HACS Installation (Recommended)
+1. Open HACS in Home Assistant
+2. Click on "Integrations"
+3. Click the "+" button
+4. Search for "Wienerlinien" and install
+
+### Option 2: Manual Installation
+Copy the `custom_components/wienerlinien` directory to your Home Assistant's `custom_components` directory.
+
+## Configuration
+
+### Option 1: UI Configuration (Recommended)
+1. Go to Configuration -> Integrations
+2. Click "+ ADD INTEGRATION"
+3. Search for "Wienerlinien"
+4. Enter your stop ID (RBL number)
+5. Choose whether you want the first or next departure (optional)
+
+### Option 2: YAML Configuration
 
 ```yaml
 sensor:
-  platform: wienerlinien
-  firstnext: first
-  stops:
-    - '4429'
-    - '3230'
+  - platform: wienerlinien
+    stops:
+      - "4429"  # Replace with your stop ID (RBL number)
+    firstnext: "first"  # Optional: "first" or "next", defaults to "first"
+    name: "My Stop"  # Optional: Custom name for the stop
 ```
 
-## Configuration variables
+## Finding your Stop ID (RBL Number)
 
-key | description
--- | --
-**platform (Required)** | The platform name.
-**stops (Required)** | RBL stop ID's
-**firstnext (Optional)** | `first` or `next` departure.
-**name (Optional)** | Custom name for the sensor.
+1. Visit [Wienerlinien's API Documentation](https://www.wienerlinien.at/ogd_realtime/doku/)
+2. Search for your stop name
+3. Note the RBL number for your stop
+
+## Sensor Data
+
+The integration creates a sensor with the following attributes:
+
+- State: Next departure time
+- Attributes:
+  - destination: Final destination
+  - platform: Platform number
+  - direction: Direction (H=outward, R=return)
+  - name: Line number/name
+  - countdown: Minutes until departure
+
+## States
+
+- `mdi:bus` icon: Normal operation
+- `mdi:bus-alert` icon: Departure imminent (<=1 minute)
+
+## Version History
+
+### 2.0.0
+- Added UI configuration support through Home Assistant's integration page
+- Added config flow for easier setup
+- Maintained backward compatibility with YAML configuration
 
 ## Sample overview
 
