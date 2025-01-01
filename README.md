@@ -33,6 +33,7 @@ key | description
 
 You can find out the Stop ID (rbl number) thanks to [Matthias Bendel](https://github.com/mabe-at) [https://till.mabe.at/rbl/](https://till.mabe.at/rbl/)
 
+For detailed information about the API response structure, see the [API Documentation](docs/api.md).
 
 This platform is using the [Wienerlinien API](http://www.wienerlinien.at) API to get the information.
 'Datenquelle: Stadt Wien – data.wien.gv.at'

@@ -2,6 +2,34 @@
 A integration that allows you to get information about next departure from specified stop.
 For more details about this component, please refer to the documentation at
 https://github.com/tofuSCHNITZEL/home-assistant-wienerlinien
+
+API Response Structure:
+    {
+        "data": {
+            "monitors": [{
+                "locationStop": {
+                    "properties": {
+                        "title": "Stop Name"
+                    }
+                },
+                "lines": [{
+                    "name": "Line number/name",
+                    "towards": "Final destination",
+                    "direction": "H or R", # H=outward, R=return
+                    "platform": "Platform number",
+                    "departures": {
+                        "departure": [{
+                            "departureTime": {
+                                "timePlanned": "YYYY-MM-DDThh:mm:ssZ",
+                                "timeReal": "YYYY-MM-DDThh:mm:ssZ",
+                                "countdown": minutes
+                            }
+                        }]
+                    }
+                }]
+            }]
+        }
+    }
 """
 import logging
 from datetime import timedelta
@@ -127,10 +155,34 @@ class WienerlinienSensor(Entity):
 
 
 class WienerlinienAPI:
-    """Call API."""
+    """Call Wiener Linien API.
+    
+    The API endpoint returns real-time departure information for a given stop ID.
+    Base URL: http://www.wienerlinien.at/ogd_realtime/monitor?rbl={stopId}
+    
+    Data Fields:
+        - locationStop.properties.title: Name of the stop
+        - lines[].name: Line number/name (e.g. "U1", "40A")
+        - lines[].towards: Final destination
+        - lines[].direction: "H" (outward) or "R" (return)
+        - lines[].platform: Platform number/name
+        - departures.departure[]: List of upcoming departures
+            - departureTime.timePlanned: Scheduled time
+            - departureTime.timeReal: Actual time (if available)
+            - departureTime.countdown: Minutes until departure
+
+    Note: Times are in ISO 8601 format with timezone information
+    License: CC BY 3.0 AT from Stadt Wien – data.wien.gv.at
+    """
 
     def __init__(self, session, loop, stopid):
-        """Initialize."""
+        """Initialize.
+        
+        Args:
+            session: aiohttp client session
+            loop: asyncio event loop
+            stopid: RBL stop ID
+        """
         self.session = session
         self.loop = loop
         self.stopid = stopid
