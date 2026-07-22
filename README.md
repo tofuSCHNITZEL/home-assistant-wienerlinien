@@ -1,3 +1,10 @@
+Please use this instead:
+
+https://github.com/rolandzeiner/wiener-linien-austria
+
+<details>
+  <summary>old readme</summary>
+
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-41BDF5.svg?style=for-the-badge)](https://github.com/hacs/integration)
 
 # Get information about next departures
@@ -38,3 +45,6 @@ This platform is using the [Wienerlinien API](http://www.wienerlinien.at) API to
 'Datenquelle: Stadt Wien – data.wien.gv.at'
 Lizenz (CC BY 3.0 AT)
 
+
+
+</details>
